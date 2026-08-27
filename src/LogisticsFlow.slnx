@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="LogisticsFlow.Api/LogisticsFlow.Api.csproj" />
+  <Project Path="LogisticsFlow.Application/LogisticsFlow.Application.csproj" />
+  <Project Path="LogisticsFlow.Domain/LogisticsFlow.Domain.csproj" />
+  <Project Path="LogisticsFlow.Infrastructure/LogisticsFlow.Infrastructure.csproj" />
+</Solution>
