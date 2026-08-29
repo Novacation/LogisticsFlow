@@ -16,6 +16,7 @@ builder.Services.AddScoped<ICreateOrderUsecase, CreateOrderUsecase>();
 builder.Services.AddScoped<IGetOrdersUseCase, GetOrdersUseCase>();
 builder.Services.AddScoped<IGetOrderByIdUseCase, GetOrderByIdUseCase>();
 builder.Services.AddScoped<IBeginOrderDispatchUseCase, BeginOrderDispatchUseCase>();
+builder.Services.AddScoped<ICancelOrderUseCase, CancelOrderUseCase>();
 
 var connectionString = builder.Configuration.GetConnectionString("LogisticsFlowDbStringConnection");
 builder.Services.AddDbContext<LogisticsFlowDbContext>(options => options.UseSqlServer(connectionString));
