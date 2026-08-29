@@ -24,7 +24,7 @@ public class OrderEntity : BaseEntity
 
     public int CustomerId { get; private set; }
 
-    public string Destination { get; private set; } = null!;
+    public string Destination { get; private set; }
 
     public OrderStatus Status { get; private set; }
 

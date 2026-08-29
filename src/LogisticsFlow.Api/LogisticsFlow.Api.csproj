@@ -4,11 +4,15 @@
         <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-      <UserSecretsId>4e057124-1ccf-46d0-b06b-145005246e4a</UserSecretsId>
-  </PropertyGroup>
+        <UserSecretsId>4e057124-1ccf-46d0-b06b-145005246e4a</UserSecretsId>
+
+        <InterceptorsNamespaces>
+            $(InterceptorsNamespaces);Microsoft.Extensions.Validation.Generated
+        </InterceptorsNamespaces>
+    </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -16,13 +20,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\LogisticsFlow.Application\LogisticsFlow.Application.csproj" />
-        <ProjectReference Include="..\LogisticsFlow.Domain\LogisticsFlow.Domain.csproj" />
-        <ProjectReference Include="..\LogisticsFlow.Infrastructure\LogisticsFlow.Infrastructure.csproj" />
+        <ProjectReference Include="..\LogisticsFlow.Application\LogisticsFlow.Application.csproj"/>
+        <ProjectReference Include="..\LogisticsFlow.Domain\LogisticsFlow.Domain.csproj"/>
+        <ProjectReference Include="..\LogisticsFlow.Infrastructure\LogisticsFlow.Infrastructure.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Endpoints\OrderItem\" />
+        <Folder Include="Endpoints\OrderItem\"/>
     </ItemGroup>
 
 </Project>

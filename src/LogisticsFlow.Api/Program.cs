@@ -14,9 +14,12 @@ builder.Services.AddOpenApi();
 builder.Services.AddScoped<IOrdersRepository, OrdersRepository>();
 builder.Services.AddScoped<ICreateOrderUsecase, CreateOrderUsecase>();
 builder.Services.AddScoped<IGetOrdersUseCase, GetOrdersUseCase>();
+builder.Services.AddScoped<IGetOrderByIdUseCase, GetOrderByIdUseCase>();
 
 var connectionString = builder.Configuration.GetConnectionString("LogisticsFlowDbStringConnection");
 builder.Services.AddDbContext<LogisticsFlowDbContext>(options => options.UseSqlServer(connectionString));
+
+builder.Services.AddValidation();
 
 var app = builder.Build();
 

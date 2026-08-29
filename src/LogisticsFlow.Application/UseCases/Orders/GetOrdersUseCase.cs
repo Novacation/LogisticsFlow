@@ -1,35 +1,41 @@
+using LogisticsFlow.Domain.Enums;
 using LogisticsFlow.Domain.Repositories;
 
 namespace LogisticsFlow.Application.UseCases.Orders;
 
-public record OrderResponse(
+public record GetOrdersResponse(
     Guid Id,
     int CustomerId,
     string Destination,
     string Status,
     DateTime CreatedAt,
     DateTime? DispatchedAt,
-    List<OrderItemResponse> Items);
+    IReadOnlyCollection<GetOrderItemResponse> Items);
 
-public record OrderItemResponse(
+public record GetOrderItemResponse(
     Guid Id,
     string Sku,
     int Quantity);
 
 public interface IGetOrdersUseCase
 {
-    Task<List<OrderResponse>> ExecuteAsync(CancellationToken cancellationToken = default);
+    Task<List<GetOrdersResponse>> ExecuteAsync(OrderStatus? status,
+        int page = 1, int pageSize = 5,
+        CancellationToken cancellationToken = default);
 }
 
 public class GetOrdersUseCase(IOrdersRepository ordersRepository) : IGetOrdersUseCase
 {
-    public async Task<List<OrderResponse>> ExecuteAsync(CancellationToken cancellationToken = default)
+    public async Task<List<GetOrdersResponse>> ExecuteAsync(
+        OrderStatus? status,
+        int page = 1, int pageSize = 5,
+        CancellationToken cancellationToken = default)
     {
-        var orders = await ordersRepository.GetAllAsync(cancellationToken);
+        var orders = await ordersRepository.GetAllAsync(status, page, pageSize, cancellationToken);
 
         return
         [
-            .. orders.Select(order => new OrderResponse(
+            .. orders.Select(order => new GetOrdersResponse(
                 order.Id,
                 order.CustomerId,
                 order.Destination,
@@ -37,7 +43,7 @@ public class GetOrdersUseCase(IOrdersRepository ordersRepository) : IGetOrdersUs
                 order.CreatedAt,
                 order.DispatchedAt,
                 [
-                    .. order.Items.Select(item => new OrderItemResponse(
+                    .. order.Items.Select(item => new GetOrderItemResponse(
                         item.Id,
                         item.Sku,
                         item.Quantity
