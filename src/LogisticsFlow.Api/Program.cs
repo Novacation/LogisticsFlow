@@ -1,4 +1,4 @@
-using LogisticsFlow.Api.Endpoints.Orders;
+using LogisticsFlow.Api.Endpoints.Order;
 using LogisticsFlow.Application.UseCases.Orders;
 using LogisticsFlow.Domain.Repositories;
 using LogisticsFlow.Infrastructure.Persistence;
@@ -15,6 +15,7 @@ builder.Services.AddScoped<IOrdersRepository, OrdersRepository>();
 builder.Services.AddScoped<ICreateOrderUsecase, CreateOrderUsecase>();
 builder.Services.AddScoped<IGetOrdersUseCase, GetOrdersUseCase>();
 builder.Services.AddScoped<IGetOrderByIdUseCase, GetOrderByIdUseCase>();
+builder.Services.AddScoped<IBeginOrderDispatchUseCase, BeginOrderDispatchUseCase>();
 
 var connectionString = builder.Configuration.GetConnectionString("LogisticsFlowDbStringConnection");
 builder.Services.AddDbContext<LogisticsFlowDbContext>(options => options.UseSqlServer(connectionString));

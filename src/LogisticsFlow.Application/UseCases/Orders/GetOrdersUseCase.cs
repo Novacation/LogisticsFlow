@@ -31,7 +31,7 @@ public class GetOrdersUseCase(IOrdersRepository ordersRepository) : IGetOrdersUs
         int page = 1, int pageSize = 5,
         CancellationToken cancellationToken = default)
     {
-        var orders = await ordersRepository.GetAllAsync(status, page, pageSize, cancellationToken);
+        var orders = await ordersRepository.GetAllReadOnlyAsync(status, page, pageSize, cancellationToken);
 
         return
         [

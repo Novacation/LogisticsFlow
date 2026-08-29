@@ -20,7 +20,7 @@ public class GetOrderByIdUseCase(IOrdersRepository repository) : IGetOrderByIdUs
 {
     public async Task<GetOrderByIdResponse?> ExecuteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var order = await repository.GetByIdAsync(id, cancellationToken);
+        var order = await repository.GetByIdReadOnlyAsync(id, cancellationToken);
         if (order is null) return null;
 
         return new GetOrderByIdResponse
