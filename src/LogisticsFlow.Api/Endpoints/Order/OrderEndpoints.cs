@@ -25,6 +25,9 @@ public static class OrderEndpoints
 
         group.MapPost("/{id:guid}/cancel", CancelOrder)
             .WithName(nameof(CancelOrder));
+
+        group.MapPost("/{id:guid}/complete", CompleteOrder)
+            .WithName(nameof(CompleteOrder));
     }
 
     private static async Task<IResult> CreateOrder(CreateOrderRequest request, ICreateOrderUsecase createOrderUsecase,
@@ -180,6 +183,36 @@ public static class OrderEndpoints
             });
         }
         catch (OrderWithInvalidStatusWhenCancellingException ex)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Invalid order process.",
+                detail: ex.Message
+            );
+        }
+        catch (OrderNotFoundException ex)
+        {
+            return Results.Problem(
+                statusCode: StatusCodes.Status404NotFound,
+                title: "Invalid order.",
+                detail: ex.Message
+            );
+        }
+    }
+
+    private static async Task<IResult> CompleteOrder(Guid id, ICompleteOrderUseCase completeOrderUseCase,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await completeOrderUseCase.ExecuteAsync(id, cancellationToken);
+            return Results.Ok(new
+            {
+                Id = id,
+                Status = nameof(OrderStatus.Completed)
+            });
+        }
+        catch (OrderWithInvalidStatusWhenCompletingException ex)
         {
             return Results.Problem(
                 statusCode: StatusCodes.Status409Conflict,
