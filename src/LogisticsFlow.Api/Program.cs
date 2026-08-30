@@ -1,4 +1,5 @@
 using LogisticsFlow.Api.Endpoints.Order;
+using LogisticsFlow.Api.ExceptionHandling;
 using LogisticsFlow.Application.UseCases.Orders;
 using LogisticsFlow.Domain.Repositories;
 using LogisticsFlow.Infrastructure.Persistence;
@@ -24,11 +25,15 @@ var connectionString = builder.Configuration.GetConnectionString("LogisticsFlowD
 builder.Services.AddDbContext<LogisticsFlowDbContext>(options => options.UseSqlServer(connectionString));
 
 builder.Services.AddValidation();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
@@ -37,6 +42,5 @@ app.MapOrderEndpoints();
 if (app.Environment.IsDevelopment())
     //health-check
     app.MapGet("/health-check", () => Results.Ok());
-
 
 app.Run();

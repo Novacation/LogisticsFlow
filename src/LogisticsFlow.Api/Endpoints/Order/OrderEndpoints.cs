@@ -1,6 +1,4 @@
-using LogisticsFlow.Application.CustomExceptions;
 using LogisticsFlow.Application.UseCases.Orders;
-using LogisticsFlow.Domain.CustomExceptions;
 using LogisticsFlow.Domain.Enums;
 
 namespace LogisticsFlow.Api.Endpoints.Order;
@@ -137,96 +135,40 @@ public static class OrderEndpoints
         CancellationToken cancellationToken = default)
     {
         var order = await getOrderByIdUsecase.ExecuteAsync(id, cancellationToken);
-        return order is null ? Results.NotFound() : Results.Ok(order);
+
+        return Results.Ok(order);
     }
 
     private static async Task<IResult> BeginDispatchOrder(Guid id, IBeginOrderDispatchUseCase beginOrderDispatchUsecase,
         CancellationToken cancellationToken = default)
     {
-        try
+        await beginOrderDispatchUsecase.ExecuteAsync(id, cancellationToken);
+        return Results.Ok(new
         {
-            await beginOrderDispatchUsecase.ExecuteAsync(id, cancellationToken);
-            return Results.Ok(new
-            {
-                Id = id,
-                Status = nameof(OrderStatus.Processing)
-            });
-        }
-        catch (OrderWithInvalidStatusWhenBeginningDispatchException ex)
-        {
-            return Results.Problem(
-                statusCode: StatusCodes.Status409Conflict,
-                title: "Invalid order process.",
-                detail: ex.Message
-            );
-        }
-        catch (OrderNotFoundException ex)
-        {
-            return Results.Problem(
-                statusCode: StatusCodes.Status404NotFound,
-                title: "Invalid order.",
-                detail: ex.Message
-            );
-        }
+            Id = id,
+            Status = nameof(OrderStatus.Processing)
+        });
     }
 
     private static async Task<IResult> CancelOrder(Guid id, ICancelOrderUseCase cancelOrderUseCase,
         CancellationToken cancellationToken = default)
     {
-        try
+        await cancelOrderUseCase.ExecuteAsync(id, cancellationToken);
+        return Results.Ok(new
         {
-            await cancelOrderUseCase.ExecuteAsync(id, cancellationToken);
-            return Results.Ok(new
-            {
-                Id = id,
-                Status = nameof(OrderStatus.Cancelled)
-            });
-        }
-        catch (OrderWithInvalidStatusWhenCancellingException ex)
-        {
-            return Results.Problem(
-                statusCode: StatusCodes.Status409Conflict,
-                title: "Invalid order process.",
-                detail: ex.Message
-            );
-        }
-        catch (OrderNotFoundException ex)
-        {
-            return Results.Problem(
-                statusCode: StatusCodes.Status404NotFound,
-                title: "Invalid order.",
-                detail: ex.Message
-            );
-        }
+            Id = id,
+            Status = nameof(OrderStatus.Cancelled)
+        });
     }
 
     private static async Task<IResult> CompleteOrder(Guid id, ICompleteOrderUseCase completeOrderUseCase,
         CancellationToken cancellationToken = default)
     {
-        try
+        await completeOrderUseCase.ExecuteAsync(id, cancellationToken);
+        return Results.Ok(new
         {
-            await completeOrderUseCase.ExecuteAsync(id, cancellationToken);
-            return Results.Ok(new
-            {
-                Id = id,
-                Status = nameof(OrderStatus.Completed)
-            });
-        }
-        catch (OrderWithInvalidStatusWhenCompletingException ex)
-        {
-            return Results.Problem(
-                statusCode: StatusCodes.Status409Conflict,
-                title: "Invalid order process.",
-                detail: ex.Message
-            );
-        }
-        catch (OrderNotFoundException ex)
-        {
-            return Results.Problem(
-                statusCode: StatusCodes.Status404NotFound,
-                title: "Invalid order.",
-                detail: ex.Message
-            );
-        }
+            Id = id,
+            Status = nameof(OrderStatus.Completed)
+        });
     }
 }
