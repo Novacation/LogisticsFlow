@@ -1,4 +1,4 @@
-﻿using LogisticsFlow.Application.CustomExceptions;
+using LogisticsFlow.Application.CustomExceptions;
 using LogisticsFlow.Application.UseCases.Orders;
 using LogisticsFlow.Domain.CustomExceptions;
 using LogisticsFlow.Domain.Entities;
@@ -8,10 +8,10 @@ using Moq;
 
 namespace LogisticsFlow.Application.Tests;
 
-public class BeginOrderDispatchUseCaseTests
+public class CancelOrderUseCaseTests
 {
     [Fact]
-    public async Task ExecuteAsync_WhenOrderExists_ShouldBeginDispatchAndSaveChanges()
+    public async Task ExecuteAsync_WhenOrderCanBeCancelled_ShouldCancelOrderAndSaveChanges()
     {
         var orderId = Guid.NewGuid();
         var order = new OrderEntity(1, "Rio de Janeiro", [new OrderItemEntity("SKU-001", 10)]);
@@ -20,11 +20,10 @@ public class BeginOrderDispatchUseCaseTests
         repositoryMock.Setup(repository => repository.GetByIdForUpdateAsync(orderId, CancellationToken.None))
             .ReturnsAsync(order);
 
-        var useCase = new BeginOrderDispatchUseCase(repositoryMock.Object);
+        var useCase = new CancelOrderUseCase(repositoryMock.Object);
         await useCase.ExecuteAsync(orderId, CancellationToken.None);
 
-        Assert.Equal(OrderStatus.Processing, order.Status);
-
+        Assert.Equal(OrderStatus.Cancelled, order.Status);
         repositoryMock.Verify(repository => repository.SaveChangesAsync(CancellationToken.None), Times.Once);
     }
 
@@ -32,32 +31,37 @@ public class BeginOrderDispatchUseCaseTests
     public async Task ExecuteAsync_WhenOrderDoesNotExist_ShouldThrowOrderNotFoundException()
     {
         var orderId = Guid.NewGuid();
+
         var repositoryMock = new Mock<IOrdersRepository>();
         repositoryMock.Setup(repository => repository.GetByIdForUpdateAsync(orderId, CancellationToken.None))
             .ReturnsAsync((OrderEntity?)null);
 
-        var useCase = new BeginOrderDispatchUseCase(repositoryMock.Object);
+        var useCase = new CancelOrderUseCase(repositoryMock.Object);
         await Assert.ThrowsAsync<OrderNotFoundException>(() => useCase.ExecuteAsync(orderId, CancellationToken.None));
+
         repositoryMock.Verify(repository => repository.SaveChangesAsync(CancellationToken.None), Times.Never);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenOrderIsAlreadyProcessing_ShouldThrowInvalidStatusException()
+    public async Task ExecuteAsync_WhenOrderIsDispatched_ShouldThrowInvalidStatusException()
     {
         var orderId = Guid.NewGuid();
         var order = new OrderEntity(1, "Rio de Janeiro", [new OrderItemEntity("SKU-001", 10)]);
+
         order.BeginDispatch();
+        order.Dispatch();
+        var dispatchedAtBeforeCancelling = order.DispatchedAt;
 
         var repositoryMock = new Mock<IOrdersRepository>();
         repositoryMock.Setup(repository => repository.GetByIdForUpdateAsync(orderId, CancellationToken.None))
             .ReturnsAsync(order);
 
-        var useCase = new BeginOrderDispatchUseCase(repositoryMock.Object);
-
-        await Assert.ThrowsAsync<OrderWithInvalidStatusWhenBeginningDispatchException>(() =>
+        var useCase = new CancelOrderUseCase(repositoryMock.Object);
+        await Assert.ThrowsAsync<OrderWithInvalidStatusWhenCancellingException>(() =>
             useCase.ExecuteAsync(orderId, CancellationToken.None));
 
-        Assert.Equal(OrderStatus.Processing, order.Status);
+        Assert.Equal(OrderStatus.Dispatched, order.Status);
+        Assert.Equal(dispatchedAtBeforeCancelling, order.DispatchedAt);
         repositoryMock.Verify(repository => repository.SaveChangesAsync(CancellationToken.None), Times.Never);
     }
 }
