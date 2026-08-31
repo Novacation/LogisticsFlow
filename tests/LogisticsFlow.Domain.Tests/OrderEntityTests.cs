@@ -87,4 +87,17 @@ public class OrderEntityTests
         Assert.Equal(OrderStatus.Cancelled, order.Status);
         Assert.Null(order.DispatchedAt);
     }
+
+    [Fact]
+    public void Cancel_WhenOrderIsProcessing_ShouldChangeStatusToCancelled()
+    {
+        var order = new OrderEntity(1, "Rio de Janeiro", [new OrderItemEntity("SKU-001", 10)]);
+
+        order.BeginDispatch();
+
+        order.Cancel();
+
+        Assert.Equal(OrderStatus.Cancelled, order.Status);
+        Assert.Null(order.DispatchedAt);
+    }
 }
