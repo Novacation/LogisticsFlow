@@ -100,4 +100,46 @@ public class OrderEntityTests
         Assert.Equal(OrderStatus.Cancelled, order.Status);
         Assert.Null(order.DispatchedAt);
     }
+
+    [Fact]
+    public void Cancel_WhenOrderIsDispatched_ShouldThrowInvalidStatusException()
+    {
+        var order = new OrderEntity(1, "Rio de Janeiro", [new OrderItemEntity("SKU-001", 10)]);
+
+        order.BeginDispatch();
+        order.Dispatch();
+        var dispatchedAtBeforeCancellation = order.DispatchedAt;
+
+        Assert.Throws<OrderWithInvalidStatusWhenCancellingException>(order.Cancel);
+        Assert.Equal(OrderStatus.Dispatched, order.Status);
+        Assert.Equal(dispatchedAtBeforeCancellation, order.DispatchedAt);
+    }
+
+    [Fact]
+    public void Cancel_WhenOrderIsCompleted_ShouldThrowInvalidStatusException()
+    {
+        var order = new OrderEntity(1, "Rio de Janeiro", [new OrderItemEntity("SKU-001", 10)]);
+
+        order.BeginDispatch();
+        order.Dispatch();
+        var dispatchedAtBeforeCancellation = order.DispatchedAt;
+
+        order.Complete();
+
+        Assert.Throws<OrderWithInvalidStatusWhenCancellingException>(order.Cancel);
+        Assert.Equal(OrderStatus.Completed, order.Status);
+        Assert.Equal(dispatchedAtBeforeCancellation, order.DispatchedAt);
+    }
+
+    [Fact]
+    public void Cancel_WhenOrderIsAlreadyCancelled_ShouldThrowInvalidStatusException()
+    {
+        var order = new OrderEntity(1, "Rio de Janeiro", [new OrderItemEntity("SKU-001", 10)]);
+
+        order.Cancel();
+
+        Assert.Throws<OrderWithInvalidStatusWhenCancellingException>(order.Cancel);
+        Assert.Equal(OrderStatus.Cancelled, order.Status);
+        Assert.Null(order.DispatchedAt);
+    }
 }
