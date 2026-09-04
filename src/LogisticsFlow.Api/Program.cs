@@ -44,3 +44,7 @@ if (app.Environment.IsDevelopment())
     app.MapGet("/health-check", () => Results.Ok());
 
 app.Run();
+
+
+//needed for integration tests
+public partial class Program;

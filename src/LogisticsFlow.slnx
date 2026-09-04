@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="../tests/LogisticsFlow.Application.Tests/LogisticsFlow.Application.Tests.csproj" />
   <Project Path="../tests/LogisticsFlow.Domain.Tests/LogisticsFlow.Domain.Tests.csproj" />
+  <Project Path="../tests/LogisticsFlow.Integration.Tests/LogisticsFlow.Integration.Tests.csproj" />
   <Project Path="LogisticsFlow.Api/LogisticsFlow.Api.csproj" />
   <Project Path="LogisticsFlow.Application/LogisticsFlow.Application.csproj" />
   <Project Path="LogisticsFlow.Domain/LogisticsFlow.Domain.csproj" />
