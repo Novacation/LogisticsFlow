@@ -2,7 +2,9 @@
 
 LogisticsFlow is a backend application for managing logistics orders and their lifecycle. The solution is built with .NET and follows a layered architecture designed to keep business rules, application logic, infrastructure concerns, and HTTP endpoints clearly separated.
 
-The project currently supports order creation and retrieval, including the items associated with each order, and is structured to evolve toward asynchronous processing, observability, cloud deployment, and distributed architecture patterns.
+The project currently supports order creation, paginated retrieval, status filtering, and explicit lifecycle transitions. HTTP errors are returned as Problem Details, and the business and application behavior is covered by unit and integration tests that run against a disposable SQL Server container.
+
+The next milestone is to containerize the API itself. After that, the project will evolve toward asynchronous processing, caching, observability, CI/CD, cloud deployment, and distributed architecture patterns.
 
 ## Architecture
 
@@ -91,6 +93,13 @@ Endpoint definitions are separated from the application bootstrap to keep `Progr
 - SQL Server 2022
 - Docker
 - Docker Compose
+- Problem Details
+- xUnit
+- Moq
+- ASP.NET Core `WebApplicationFactory`
+- Testcontainers for .NET
+- Respawn
+- Coverlet
 
 ## Domain Model
 
@@ -128,13 +137,18 @@ The order lifecycle is modeled through explicit status transitions.
 Created
    |
    v
+Processing
+   |
+   v
 Dispatched
    |
    v
 Completed
 ```
 
-Orders may also be cancelled according to the rules defined by the domain.
+Orders may be cancelled while they are `Created` or `Processing`. Invalid lifecycle transitions are rejected by the domain.
+
+The current dispatch endpoint starts the operation by moving an order from `Created` to `Processing`. A future asynchronous Worker will perform the actual dispatch and move it from `Processing` to `Dispatched`, assigning `DispatchedAt` at that point.
 
 ## Persistence
 
@@ -310,31 +324,115 @@ A successful request returns `201 Created` with the generated order identifier.
 
 ### Retrieve orders
 
-The API supports retrieving orders together with their associated items.
+```http
+GET /orders?page=1&pageSize=20&status=Created
+```
 
-Additional query and lifecycle endpoints are being added as the domain evolves.
+`page` and `pageSize` are required. `pageSize` must be between 5 and 100. The optional `status` parameter accepts an order status name.
 
-## Planned Evolution
+The response includes the orders and their associated items. Queries are read-only, paginated, and ordered before being executed against SQL Server.
 
-The next application capabilities include:
+### Retrieve an order by ID
 
-```text
-GET  /orders
-GET  /orders/{id}
+```http
+GET /orders/{id}
+```
 
+Returns an order and its items, or `404 Not Found` when the identifier does not exist.
+
+### Begin dispatch
+
+```http
 POST /orders/{id}/dispatch
-POST /orders/{id}/complete
+```
+
+Moves an order from `Created` to `Processing`.
+
+### Cancel an order
+
+```http
 POST /orders/{id}/cancel
 ```
 
-The architecture is also prepared to evolve with:
+Moves an order from `Created` or `Processing` to `Cancelled`.
 
-- domain validation and lifecycle rules;
-- standardized error responses with Problem Details;
-- unit tests;
-- integration tests;
-- Testcontainers;
-- API containerization;
+### Complete an order
+
+```http
+POST /orders/{id}/complete
+```
+
+Moves an order from `Dispatched` to `Completed`.
+
+## Error Handling
+
+The API uses a global exception handler and returns standardized `application/problem+json` responses.
+
+Current mappings include:
+
+- `400 Bad Request` for invalid or missing query parameters;
+- `404 Not Found` when an order does not exist;
+- `409 Conflict` for invalid lifecycle transitions;
+- `500 Internal Server Error` for unexpected failures, without exposing internal exception details.
+
+Unexpected exceptions are logged with the original exception object and stack trace.
+
+## Testing
+
+The solution contains three test projects:
+
+```text
+LogisticsFlow.Domain.Tests
+LogisticsFlow.Application.Tests
+LogisticsFlow.Integration.Tests
+```
+
+Domain tests verify lifecycle rules and invariants. Application tests use Moq to isolate use cases and verify repository interactions. Integration tests start the complete ASP.NET Core pipeline with `WebApplicationFactory` and use Testcontainers to run a real, disposable SQL Server instance.
+
+Database migrations are applied once when the shared integration fixture starts. Respawn removes application data between tests while preserving the schema and EF Core migration history.
+
+Run all tests from the solution root:
+
+```bash
+dotnet test
+```
+
+Docker must be running for the integration test project.
+
+Collect coverage for integration tests with Coverlet:
+
+```bash
+dotnet test tests/LogisticsFlow.Integration.Tests/LogisticsFlow.Integration.Tests.csproj \
+  --collect:"XPlat Code Coverage"
+```
+
+The generated Cobertura file is written under the integration project's `TestResults` directory, which is ignored by Git.
+
+## Planned Evolution
+
+The current application foundation is complete:
+
+```text
+API and domain lifecycle
+├── create and retrieve orders
+├── required pagination and optional status filtering
+├── explicit lifecycle transitions
+├── standardized Problem Details
+├── unit tests
+└── integration tests with SQL Server Testcontainers
+```
+
+The next practical milestone is:
+
+```text
+Dockerfile for the API
+        |
+        v
+API + SQL Server in Docker Compose
+```
+
+After local API containerization, the planned evolution includes:
+
 - Redis caching;
 - asynchronous processing with AWS SQS;
 - .NET background workers;
