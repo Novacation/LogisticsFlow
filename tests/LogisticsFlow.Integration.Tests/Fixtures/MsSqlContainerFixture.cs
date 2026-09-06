@@ -1,7 +1,11 @@
+using System.Data.Common;
 using LogisticsFlow.Infrastructure.Persistence;
 using LogisticsFlow.Integration.Tests.Factories;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Respawn;
+using Respawn.Graph;
 using Testcontainers.MsSql;
 
 namespace LogisticsFlow.Integration.Tests.Fixtures;
@@ -12,6 +16,10 @@ public sealed class MsSqlContainerFixture : IAsyncLifetime
         "mcr.microsoft.com/mssql/server:2022-latest";
 
     private readonly MsSqlContainer _container = new MsSqlBuilder(MsSqlImage).Build();
+
+    private DbConnection _dbConnection = null!;
+
+    private Respawner _respawner = null!;
 
     private string ConnectionString => _container.GetConnectionString();
 
@@ -27,6 +35,17 @@ public sealed class MsSqlContainerFixture : IAsyncLifetime
 
         //search and apply migrations located at the same assembly of the dbcontext (LogisticsFlowDbContext)
         await dbContext.Database.MigrateAsync();
+        _dbConnection = new SqlConnection(ConnectionString);
+        await _dbConnection.OpenAsync();
+
+        _respawner = await Respawner.CreateAsync(_dbConnection, new RespawnerOptions
+        {
+            DbAdapter = DbAdapter.SqlServer,
+            TablesToIgnore =
+            [
+                new Table("__EFMigrationsHistory")
+            ]
+        });
 
         Client = Factory.CreateClient();
     }
@@ -35,13 +54,12 @@ public sealed class MsSqlContainerFixture : IAsyncLifetime
     {
         Client.Dispose();
         await Factory.DisposeAsync();
+        await _dbConnection.DisposeAsync();
         await _container.DisposeAsync();
     }
 
     public async Task ResetDatabaseAsync()
     {
-        using var scope = Factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<LogisticsFlowDbContext>();
-        await dbContext.Database.EnsureDeletedAsync();
+        await _respawner.ResetAsync(_dbConnection);
     }
 }

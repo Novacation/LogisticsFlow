@@ -9,10 +9,20 @@ using Microsoft.AspNetCore.Mvc;
 namespace LogisticsFlow.Integration.Tests;
 
 [Collection(nameof(DatabaseIntegrationCollection))]
-public class OrderEndpointsTests(MsSqlContainerFixture databaseFixture)
+public class OrderEndpointsTests(MsSqlContainerFixture databaseFixture) : IAsyncLifetime
 {
     private readonly HttpClient _client =
         databaseFixture.Client;
+
+    public Task InitializeAsync()
+    {
+        return databaseFixture.ResetDatabaseAsync();
+    }
+
+    public Task DisposeAsync()
+    {
+        return Task.CompletedTask;
+    }
 
     [Fact]
     public async Task GetOrders_WhenPageIsZero_ShouldReturnBadRequestProblemDetails()
@@ -86,5 +96,36 @@ public class OrderEndpointsTests(MsSqlContainerFixture databaseFixture)
         Assert.NotEqual(Guid.Empty, responseItem.Id);
         Assert.Equal(sku, responseItem.Sku);
         Assert.Equal(quantity, responseItem.Quantity);
+    }
+
+    [Fact]
+    public async Task ResetDatabaseAsync_WhenOrderExists_ShouldRemoveOrderData()
+    {
+        const int customerId = 1;
+        const string destination = "Rio de Janeiro";
+        const string sku = "SKU-4892";
+        const int quantity = 10;
+
+        var orderItems = new List<CreateOrderItemRequest>
+        {
+            new(sku, quantity)
+        };
+        var request = new CreateOrderRequest(customerId, destination, orderItems);
+
+        var responseOrderCreation = await _client.PostAsJsonAsync("/orders", request);
+
+        Assert.Equal(HttpStatusCode.Created, responseOrderCreation.StatusCode);
+        Assert.NotNull(responseOrderCreation.Headers.Location);
+
+        await databaseFixture.ResetDatabaseAsync();
+
+        var responseOrders = await _client.GetAsync("/orders?page=1&pageSize=20");
+
+        Assert.Equal(HttpStatusCode.OK, responseOrders.StatusCode);
+
+        var getOrdersResponse = await responseOrders.Content.ReadFromJsonAsync<List<GetOrdersResponse>>();
+
+        Assert.NotNull(getOrdersResponse);
+        Assert.Empty(getOrdersResponse);
     }
 }
