@@ -9,6 +9,8 @@
         <InterceptorsNamespaces>
             $(InterceptorsNamespaces);Microsoft.Extensions.Validation.Generated
         </InterceptorsNamespaces>
+
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
