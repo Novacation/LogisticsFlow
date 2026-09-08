@@ -24,6 +24,13 @@ builder.Services.AddScoped<ICompleteOrderUseCase, CompleteOrderUseCase>();
 var connectionString = builder.Configuration.GetConnectionString("LogisticsFlowDbStringConnection");
 builder.Services.AddDbContext<LogisticsFlowDbContext>(options => options.UseSqlServer(connectionString));
 
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisConnectionString;
+    options.InstanceName = "LogisticsFlow:";
+});
+
 builder.Services.AddValidation();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
