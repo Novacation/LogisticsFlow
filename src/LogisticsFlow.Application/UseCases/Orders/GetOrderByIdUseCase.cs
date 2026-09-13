@@ -1,3 +1,4 @@
+using LogisticsFlow.Application.Caching;
 using LogisticsFlow.Application.CustomExceptions;
 using LogisticsFlow.Domain.Repositories;
 
@@ -17,14 +18,17 @@ public interface IGetOrderByIdUseCase
     Task<GetOrderByIdResponse> ExecuteAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
-public class GetOrderByIdUseCase(IOrdersRepository repository) : IGetOrderByIdUseCase
+public class GetOrderByIdUseCase(IOrdersRepository repository, IOrderCache orderCache) : IGetOrderByIdUseCase
 {
     public async Task<GetOrderByIdResponse> ExecuteAsync(Guid id, CancellationToken cancellationToken = default)
     {
+        var cachedOrder = await orderCache.GetByIdAsync(id, cancellationToken);
+        if (cachedOrder != null) return cachedOrder;
+
         var order = await repository.GetByIdReadOnlyAsync(id, cancellationToken);
         if (order is null) throw new OrderNotFoundException(id);
 
-        return new GetOrderByIdResponse
+        var mappedOrder = new GetOrderByIdResponse
         (
             order.Id,
             order.CustomerId,
@@ -40,5 +44,9 @@ public class GetOrderByIdUseCase(IOrdersRepository repository) : IGetOrderByIdUs
                 ))
             ]
         );
+
+        await orderCache.SetAsync(mappedOrder, cancellationToken);
+
+        return mappedOrder;
     }
 }

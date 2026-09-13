@@ -17,9 +17,11 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.11"/>
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\LogisticsFlow.Application\LogisticsFlow.Application.csproj"/>
         <ProjectReference Include="..\LogisticsFlow.Domain\LogisticsFlow.Domain.csproj"/>
     </ItemGroup>
 

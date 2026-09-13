@@ -1,15 +1,15 @@
 using LogisticsFlow.Api.Endpoints.Order;
 using LogisticsFlow.Api.ExceptionHandling;
+using LogisticsFlow.Application.Caching;
 using LogisticsFlow.Application.UseCases.Orders;
 using LogisticsFlow.Domain.Repositories;
+using LogisticsFlow.Infrastructure.Caching;
 using LogisticsFlow.Infrastructure.Persistence;
 using LogisticsFlow.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 builder.Services.AddScoped<IOrdersRepository, OrdersRepository>();
@@ -19,7 +19,7 @@ builder.Services.AddScoped<IGetOrderByIdUseCase, GetOrderByIdUseCase>();
 builder.Services.AddScoped<IBeginOrderDispatchUseCase, BeginOrderDispatchUseCase>();
 builder.Services.AddScoped<ICancelOrderUseCase, CancelOrderUseCase>();
 builder.Services.AddScoped<ICompleteOrderUseCase, CompleteOrderUseCase>();
-
+builder.Services.AddScoped<IOrderCache, RedisOrderCache>();
 
 var connectionString = builder.Configuration.GetConnectionString("LogisticsFlowDbStringConnection");
 builder.Services.AddDbContext<LogisticsFlowDbContext>(options => options.UseSqlServer(connectionString));
