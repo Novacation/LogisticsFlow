@@ -169,6 +169,10 @@ public class OrderEndpointsTests(MsSqlContainerFixture databaseFixture) : IAsync
     {
         var location = await CreateValidOrderAsync();
 
+        var responseCreatedOrder = await _client.GetAsync(location);
+
+        Assert.Equal(HttpStatusCode.OK, responseCreatedOrder.StatusCode);
+
         var responseOrderDispatch = await _client.PostAsync($"{location}/dispatch", null);
 
         Assert.Equal(HttpStatusCode.OK, responseOrderDispatch.StatusCode);
@@ -178,11 +182,21 @@ public class OrderEndpointsTests(MsSqlContainerFixture databaseFixture) : IAsync
         Assert.Equal(HttpStatusCode.OK, responseOrder.StatusCode);
 
         var getOrderByIdResponse = await responseOrder.Content.ReadFromJsonAsync<GetOrderByIdResponse>();
+        var getCreatedOrderByIdResponse = await responseCreatedOrder.Content.ReadFromJsonAsync<GetOrderByIdResponse>();
 
         Assert.NotNull(getOrderByIdResponse);
+        Assert.NotNull(getCreatedOrderByIdResponse);
 
         Assert.Equal(nameof(OrderStatus.Processing), getOrderByIdResponse.Status);
         Assert.Null(getOrderByIdResponse.DispatchedAt);
+
+        Assert.Equal(getCreatedOrderByIdResponse.Id, getOrderByIdResponse.Id);
+        Assert.Equal(getCreatedOrderByIdResponse.CreatedAt, getOrderByIdResponse.CreatedAt);
+        Assert.Equal(getCreatedOrderByIdResponse.CustomerId, getOrderByIdResponse.CustomerId);
+        Assert.Equal(getCreatedOrderByIdResponse.Destination, getOrderByIdResponse.Destination);
+        Assert.Equal(getCreatedOrderByIdResponse.DispatchedAt, getOrderByIdResponse.DispatchedAt);
+        Assert.NotEqual(getCreatedOrderByIdResponse.Status, getOrderByIdResponse.Status);
+        Assert.Equal(nameof(OrderStatus.Created), getCreatedOrderByIdResponse.Status);
     }
 
     [Fact]
@@ -225,6 +239,10 @@ public class OrderEndpointsTests(MsSqlContainerFixture databaseFixture) : IAsync
     public async Task CancelOrder_WhenOrderIsCreated_ShouldPersistCancelledStatus()
     {
         var location = await CreateValidOrderAsync();
+
+        var responseCreatedOrder = await _client.GetAsync(location);
+        Assert.Equal(HttpStatusCode.OK, responseCreatedOrder.StatusCode);
+
         var responseOrderCancel = await _client.PostAsync($"{location}/cancel", null);
         Assert.Equal(HttpStatusCode.OK, responseOrderCancel.StatusCode);
 
@@ -232,9 +250,23 @@ public class OrderEndpointsTests(MsSqlContainerFixture databaseFixture) : IAsync
         Assert.Equal(HttpStatusCode.OK, responseOrder.StatusCode);
 
         var getOrderByIdResponse = await responseOrder.Content.ReadFromJsonAsync<GetOrderByIdResponse>();
+        var getCreatedOrderByIdResponse = await responseCreatedOrder.Content.ReadFromJsonAsync<GetOrderByIdResponse>();
+
         Assert.NotNull(getOrderByIdResponse);
         Assert.Equal(nameof(OrderStatus.Cancelled), getOrderByIdResponse.Status);
         Assert.Null(getOrderByIdResponse.DispatchedAt);
+
+        Assert.NotNull(getCreatedOrderByIdResponse);
+        Assert.Equal(getCreatedOrderByIdResponse.Id, getOrderByIdResponse.Id);
+        Assert.Equal(getCreatedOrderByIdResponse.CreatedAt, getOrderByIdResponse.CreatedAt);
+        Assert.Equal(getCreatedOrderByIdResponse.CustomerId, getOrderByIdResponse.CustomerId);
+        Assert.Equal(getCreatedOrderByIdResponse.Destination, getOrderByIdResponse.Destination);
+        Assert.Equal(nameof(OrderStatus.Created), getCreatedOrderByIdResponse.Status);
+
+        var orderItem = Assert.Single(getOrderByIdResponse.Items);
+        var createdOrderItem = Assert.Single(getCreatedOrderByIdResponse.Items);
+
+        Assert.Equal(orderItem, createdOrderItem);
     }
 
     private async Task<Uri> CreateValidOrderAsync()

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using LogisticsFlow.Application.Caching;
 using LogisticsFlow.Domain.Entities;
 using LogisticsFlow.Domain.Repositories;
 
@@ -22,15 +23,33 @@ public interface ICreateOrderUsecase
     Task<Guid> ExecuteAsync(CreateOrderRequest orderRequest, CancellationToken cancellationToken = default);
 }
 
-public class CreateOrderUsecase(IOrdersRepository ordersRepository) : ICreateOrderUsecase
+public class CreateOrderUsecase(IOrdersRepository ordersRepository, IOrderCache orderCache) : ICreateOrderUsecase
 {
     public async Task<Guid> ExecuteAsync(CreateOrderRequest orderRequest,
         CancellationToken cancellationToken = default)
     {
         var items = orderRequest.Items.Select(x => new OrderItemEntity(x.Sku, x.Quantity)).ToList();
-        var order = new OrderEntity(orderRequest.CustomerId!.Value, orderRequest.Destination, items);
+        var order = new OrderEntity(orderRequest.CustomerId!.Value, orderRequest.Destination!, items);
 
         await ordersRepository.CreateAsync(order, cancellationToken);
+
+        var mappedOrder = new GetOrderByIdResponse(
+            order.Id,
+            order.CustomerId,
+            order.Destination,
+            order.Status.ToString(),
+            order.CreatedAt,
+            order.DispatchedAt,
+            [
+                .. order.Items.Select(x => new GetOrderItemResponse(
+                    x.Id,
+                    x.Sku,
+                    x.Quantity
+                ))
+            ]
+        );
+
+        await orderCache.SetAsync(mappedOrder, cancellationToken);
 
         return order.Id;
     }
