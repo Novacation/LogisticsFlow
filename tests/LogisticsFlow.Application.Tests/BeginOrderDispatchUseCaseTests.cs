@@ -73,4 +73,30 @@ public class BeginOrderDispatchUseCaseTests
         repositoryMock.Verify(repository => repository.SaveChangesAsync(CancellationToken.None), Times.Never);
         cacheMock.Verify(cache => cache.RemoveAsync(orderId, CancellationToken.None), Times.Never);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenSaveChangesFails_ShouldNotRemoveCachedOrder()
+    {
+        var orderId = Guid.NewGuid();
+        var repositoryMock = new Mock<IOrdersRepository>();
+        var order = new OrderEntity(1, "Rio de Janeiro", [new OrderItemEntity("SKU-001", 10)]);
+
+        repositoryMock.Setup(repository => repository.GetByIdForUpdateAsync(orderId, CancellationToken.None))
+            .ReturnsAsync(order);
+
+        repositoryMock.Setup(repository => repository.SaveChangesAsync(CancellationToken.None))
+            .ThrowsAsync(new InvalidOperationException("Database Failure"));
+
+
+        var cacheMock = new Mock<IOrderCache>();
+
+        var useCase = new BeginOrderDispatchUseCase(repositoryMock.Object, cacheMock.Object);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            useCase.ExecuteAsync(orderId, CancellationToken.None));
+
+        repositoryMock.Verify(repository => repository.SaveChangesAsync(CancellationToken.None), Times.Once);
+
+        cacheMock.Verify(cache => cache.RemoveAsync(orderId, CancellationToken.None), Times.Never);
+    }
 }

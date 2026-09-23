@@ -16,7 +16,7 @@ public class OrderEndpointsTests(MsSqlContainerFixture databaseFixture) : IAsync
 
     public Task InitializeAsync()
     {
-        return databaseFixture.ResetDatabaseAsync();
+        return databaseFixture.ResetStateAsync();
     }
 
     public Task DisposeAsync()

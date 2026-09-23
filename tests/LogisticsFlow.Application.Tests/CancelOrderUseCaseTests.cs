@@ -1,3 +1,4 @@
+using LogisticsFlow.Application.Caching;
 using LogisticsFlow.Application.CustomExceptions;
 using LogisticsFlow.Application.UseCases.Orders;
 using LogisticsFlow.Domain.CustomExceptions;
@@ -20,11 +21,15 @@ public class CancelOrderUseCaseTests
         repositoryMock.Setup(repository => repository.GetByIdForUpdateAsync(orderId, CancellationToken.None))
             .ReturnsAsync(order);
 
-        var useCase = new CancelOrderUseCase(repositoryMock.Object);
+        var cacheMock = new Mock<IOrderCache>();
+
+        var useCase = new CancelOrderUseCase(repositoryMock.Object, cacheMock.Object);
         await useCase.ExecuteAsync(orderId, CancellationToken.None);
 
         Assert.Equal(OrderStatus.Cancelled, order.Status);
         repositoryMock.Verify(repository => repository.SaveChangesAsync(CancellationToken.None), Times.Once);
+
+        cacheMock.Verify(cache => cache.RemoveAsync(orderId, CancellationToken.None), Times.Once);
     }
 
     [Fact]
@@ -35,11 +40,14 @@ public class CancelOrderUseCaseTests
         var repositoryMock = new Mock<IOrdersRepository>();
         repositoryMock.Setup(repository => repository.GetByIdForUpdateAsync(orderId, CancellationToken.None))
             .ReturnsAsync((OrderEntity?)null);
+        var cacheMock = new Mock<IOrderCache>();
 
-        var useCase = new CancelOrderUseCase(repositoryMock.Object);
+        var useCase = new CancelOrderUseCase(repositoryMock.Object, cacheMock.Object);
         await Assert.ThrowsAsync<OrderNotFoundException>(() => useCase.ExecuteAsync(orderId, CancellationToken.None));
 
         repositoryMock.Verify(repository => repository.SaveChangesAsync(CancellationToken.None), Times.Never);
+
+        cacheMock.Verify(cache => cache.RemoveAsync(orderId, CancellationToken.None), Times.Never);
     }
 
     [Fact]
@@ -56,12 +64,16 @@ public class CancelOrderUseCaseTests
         repositoryMock.Setup(repository => repository.GetByIdForUpdateAsync(orderId, CancellationToken.None))
             .ReturnsAsync(order);
 
-        var useCase = new CancelOrderUseCase(repositoryMock.Object);
+        var cacheMock = new Mock<IOrderCache>();
+
+        var useCase = new CancelOrderUseCase(repositoryMock.Object, cacheMock.Object);
         await Assert.ThrowsAsync<OrderWithInvalidStatusWhenCancellingException>(() =>
             useCase.ExecuteAsync(orderId, CancellationToken.None));
 
         Assert.Equal(OrderStatus.Dispatched, order.Status);
         Assert.Equal(dispatchedAtBeforeCancelling, order.DispatchedAt);
         repositoryMock.Verify(repository => repository.SaveChangesAsync(CancellationToken.None), Times.Never);
+
+        cacheMock.Verify(cache => cache.RemoveAsync(orderId, CancellationToken.None), Times.Never);
     }
 }

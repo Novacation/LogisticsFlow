@@ -8,12 +8,19 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace LogisticsFlow.Integration.Tests.Factories;
 
-public class LogisticsFlowWebApplicationFactory(string connectionString) : WebApplicationFactory<Program>
+public class LogisticsFlowWebApplicationFactory(string connectionString, string redisConnectionString)
+    : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
         {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnectionString;
+                options.InstanceName = "LogisticsFlow:";
+            });
+
             services.RemoveAll<
                 IDbContextOptionsConfiguration<LogisticsFlowDbContext>>();
 

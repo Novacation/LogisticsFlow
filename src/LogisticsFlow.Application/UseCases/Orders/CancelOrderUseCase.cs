@@ -1,3 +1,4 @@
+using LogisticsFlow.Application.Caching;
 using LogisticsFlow.Application.CustomExceptions;
 using LogisticsFlow.Domain.Repositories;
 
@@ -8,7 +9,7 @@ public interface ICancelOrderUseCase
     Task ExecuteAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
-public class CancelOrderUseCase(IOrdersRepository repository) : ICancelOrderUseCase
+public class CancelOrderUseCase(IOrdersRepository repository, IOrderCache orderCache) : ICancelOrderUseCase
 {
     public async Task ExecuteAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -19,5 +20,7 @@ public class CancelOrderUseCase(IOrdersRepository repository) : ICancelOrderUseC
         order.Cancel();
 
         await repository.SaveChangesAsync(cancellationToken);
+
+        await orderCache.RemoveAsync(id, cancellationToken);
     }
 }
