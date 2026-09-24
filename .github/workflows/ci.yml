@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore Dependencies
+        run: dotnet restore src/LogisticsFlow.slnx
+
+      - name: Build
+        run: dotnet build src/LogisticsFlow.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test src/LogisticsFlow.slnx --configuration Release --no-build --no-restore
+
+      - name: Build Docker image
+        run: docker build --file src/LogisticsFlow.Api/Dockerfile --tag logisticsflow-api:ci .
